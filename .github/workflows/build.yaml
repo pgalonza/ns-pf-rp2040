@@ -1,0 +1,97 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'Dockerfile'
+
+permissions: {}
+
+jobs:
+  # shellcheck:
+  #   name: Shellcheck
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Run ShellCheck
+  #       uses: ludeeus/action-shellcheck@master
+  build_bootloader:
+    name: Build bootloader
+    runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
+    # needs: shellcheck
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check
+        run: |
+          ls -l ./
+          echo "---"
+          pwd
+          echo "---"
+          ls -l /
+          echo "---"
+          export
+          echo "---"
+          echo $GITHUB_WORKSPACE
+      - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
+        run: |
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $BOOTLOADER_PATH/pico_sdk_import.cmake
+      - name: Build bootloader
+        run: |
+          # Backup and modify memmap_default.ld for busk build
+          # cp $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak
+          # sed -i 's/RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k/RAM(rwx) : ORIGIN = 0x20038000, LENGTH = 32k/g' $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+          patch -u $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld /$GITHUB_WORKSPACE/patch/01-memmap-default-ram.patch
+          mkdir -p $GITHUB_WORKSPACE/build/bootloader
+          cd $GITHUB_WORKSPACE/build/bootloader
+          cmake $BOOTLOADER_PATH
+          make
+          make clean
+          # Restore original memmap_default.ld from backup
+          # rm -f $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+          # mv $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+  build_firmware:
+    name: Build firmware
+    runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
+    # needs: shellcheck
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check
+        run: |
+          ls -l ./
+          echo "---"
+          pwd
+          echo "---"
+          ls -l /
+          echo "---"
+          export
+          echo "---"
+          echo $GITHUB_WORKSPACE
+      - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
+        run: |
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $FIRMWARE_PATH/pico_sdk_import.cmake
+      - name: Create 'generated' directory in usk source directory
+        run: mkdir -p $FIRMWARE_PATH/generated
+      - name: Build firmware
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/build/firmware
+          cd $GITHUB_WORKSPACE/build/firmware
+          cmake $FIRMWARE_PATH
+          make
+          make clean
+          python3 $FIRMWARE_PATH/prepare.py
+
+
+
+      # - name: Upload artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     retention-days: 1
+      #     compression-level: 0
+      #     name: evaron-aio-artifact
+      #     path: "./Evaron-AIO.zip"
