@@ -43,14 +43,26 @@ jobs:
           # Restore original memmap_default.ld from backup
           # rm -f $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
           # mv $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: bootloader
+          path: build/bootloader/busk.bin
   build_firmware:
     name: Build firmware
     runs-on: ubuntu-latest
     container: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
-    # needs: shellcheck
+    needs: build_bootloader
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bootloader
+          path: build/bootloader/
       - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
         run: |
           ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $GITHUB_WORKSPACE/firmware/pico_sdk_import.cmake
@@ -64,13 +76,12 @@ jobs:
           make
           make clean
           python3 $GITHUB_WORKSPACE/firmware/prepare.py
-
-
-
-      # - name: Upload artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     retention-days: 1
-      #     compression-level: 0
-      #     name: evaron-aio-artifact
-      #     path: "./Evaron-AIO.zip"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: rp2040-firmware
+          path: |
+            build/firmware/firmware.uf2
+            build/firmware/update.bin
