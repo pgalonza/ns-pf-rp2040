@@ -27,7 +27,7 @@ def add_blocks(data, offset):
     for i in range(0, len(data), 256):
         add_block(data[i:i+256], offset + i)
 
-add_blocks(open("../busk/busk.bin", "rb").read(), 0x10000000)
+add_blocks(open("../bootloader/busk.bin", "rb").read(), 0x10000000)
 
 add_blocks(b"\xFF" * 256, 0x10000000 + 0xFF00)
 
