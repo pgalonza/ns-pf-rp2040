@@ -20,25 +20,15 @@ jobs:
   build_bootloader:
     name: Build bootloader
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
     # needs: shellcheck
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check
-        run: |
-          ls -l ./
-          echo "---"
-          pwd
-          echo "---"
-          ls -l /
-          echo "---"
-          export
-          echo "---"
-          echo $GITHUB_WORKSPACE
       - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
         run: |
-          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $BOOTLOADER_PATH/pico_sdk_import.cmake
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $GITHUB_WORKSPACE/bootloader/pico_sdk_import.cmake
       - name: Build bootloader
         run: |
           # Backup and modify memmap_default.ld for busk build
@@ -47,7 +37,7 @@ jobs:
           patch -u $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld /$GITHUB_WORKSPACE/patch/01-memmap-default-ram.patch
           mkdir -p $GITHUB_WORKSPACE/build/bootloader
           cd $GITHUB_WORKSPACE/build/bootloader
-          cmake $BOOTLOADER_PATH
+          cmake $GITHUB_WORKSPACE/bootloader
           make
           make clean
           # Restore original memmap_default.ld from backup
@@ -61,30 +51,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check
-        run: |
-          ls -l ./
-          echo "---"
-          pwd
-          echo "---"
-          ls -l /
-          echo "---"
-          export
-          echo "---"
-          echo $GITHUB_WORKSPACE
       - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
         run: |
-          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $FIRMWARE_PATH/pico_sdk_import.cmake
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $GITHUB_WORKSPACE/firmware/pico_sdk_import.cmake
       - name: Create 'generated' directory in usk source directory
-        run: mkdir -p $FIRMWARE_PATH/generated
+        run: mkdir -p $GITHUB_WORKSPACE/firmware/generated
       - name: Build firmware
         run: |
           mkdir -p $GITHUB_WORKSPACE/build/firmware
           cd $GITHUB_WORKSPACE/build/firmware
-          cmake $FIRMWARE_PATH
+          cmake $GITHUB_WORKSPACE/firmware
           make
           make clean
-          python3 $FIRMWARE_PATH/prepare.py
+          python3 $GITHUB_WORKSPACE/firmware/prepare.py
 
 
 

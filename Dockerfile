@@ -27,5 +27,5 @@ git submodule update --init
 
 
 ENV PICO_SDK_PATH=$SDK_PATH
-ENV FIRMWARE_PATH=/app/firmware
-ENV BOOTLOADER_PATH=/app/bootloader
+# ENV FIRMWARE_PATH=/app/firmware
+# ENV BOOTLOADER_PATH=/app/bootloader
