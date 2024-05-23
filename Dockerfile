@@ -2,7 +2,7 @@ FROM alpine:3.20
 
 RUN apk update && \
 apk upgrade && \
-apk add git \
+apk add --no-cache git \
 patch \
 python3 \
 build-base \
@@ -10,13 +10,18 @@ libusb-dev \
 bsd-compat-headers \
 newlib-arm-none-eabi \
 make \
-pkg-config \
 cmake \
-build-essential \
-libnewlib-arm-none-eabi \
+pkgconfig \
 gcc-arm-none-eabi \
-libstdc++-arm-none-eabi-newlib \
+g++-arm-none-eabi \
 rm -rf /var/cache/apk/*
+
+# Ubuntu:
+# libstdc++-arm-none-eabi-newlib
+# gcc++-arm-none-eabi
+# libnewlib-arm-none-eabi
+# build-essential
+# pkg-config
 
 WORKDIR /app/
 
