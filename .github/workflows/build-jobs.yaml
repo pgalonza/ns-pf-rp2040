@@ -1,0 +1,73 @@
+name: Build jobs
+
+on:
+  workflow_call:
+
+jobs:
+  build_bootloader:
+    name: Build bootloader
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
+        run: |
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $GITHUB_WORKSPACE/bootloader/pico_sdk_import.cmake
+      - name: Build bootloader
+        run: |
+          # Backup and modify memmap_default.ld for busk build
+          # cp $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak
+          # sed -i 's/RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k/RAM(rwx) : ORIGIN = 0x20038000, LENGTH = 32k/g' $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+          patch -u $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld /$GITHUB_WORKSPACE/patch/01-memmap-default-ram.patch
+          mkdir -p $GITHUB_WORKSPACE/build/bootloader
+          cd $GITHUB_WORKSPACE/build/bootloader
+          cmake $GITHUB_WORKSPACE/bootloader
+          make
+          make clean
+          # Restore original memmap_default.ld from backup
+          # rm -f $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+          # mv $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: bootloader
+          path: build/bootloader/busk.bin
+  build_firmware:
+    name: Build firmware
+    runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository_owner }}/pfrp2040-build:latest
+    needs: build_bootloader
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bootloader
+          path: build/bootloader/
+      - name: Create symbolic link of pico_sdk_import.cmake in busk and usk sources
+        run: |
+          ln -s $PICO_SDK_PATH/external/pico_sdk_import.cmake $GITHUB_WORKSPACE/firmware/pico_sdk_import.cmake
+      - name: Create 'generated' directory in usk source directory
+        run: mkdir -p $GITHUB_WORKSPACE/firmware/generated
+      - name: Build firmware
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/build/firmware
+          cd $GITHUB_WORKSPACE/build/firmware
+          cmake $GITHUB_WORKSPACE/firmware
+          make
+          make clean
+          python3 $GITHUB_WORKSPACE/firmware/prepare.py
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: rp2040-firmware
+          path: |
+            build/firmware/firmware.uf2
+            build/firmware/update.bin
