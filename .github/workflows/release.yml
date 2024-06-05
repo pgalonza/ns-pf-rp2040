@@ -25,8 +25,6 @@ jobs:
         with:
           config: ./configs/cliff.toml
           args: --verbose
-        env:
-          OUTPUT: CHANGELOG.md
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -36,4 +34,4 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "./firmware.uf2,./update.bin"
-          bodyFile: "CHANGELOG.md"
+          bodyFile: "git-cliff/CHANGELOG.md"
