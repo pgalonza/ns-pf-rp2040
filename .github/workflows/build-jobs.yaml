@@ -25,7 +25,7 @@ jobs:
           cd $GITHUB_WORKSPACE/build/bootloader
           cmake $GITHUB_WORKSPACE/bootloader
           make -j $(nproc)
-          make clean
+          # make clean
           # Restore original memmap_default.ld from backup
           # rm -f $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
           # mv $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld.bak $PICO_SDK_PATH/src/rp2_common/pico_standard_link/memmap_default.ld
@@ -60,7 +60,7 @@ jobs:
           cd $GITHUB_WORKSPACE/build/firmware
           cmake $GITHUB_WORKSPACE/firmware
           make -j $(nproc)
-          make clean
+          # make clean
           python3 $GITHUB_WORKSPACE/firmware/prepare.py
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
